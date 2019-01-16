@@ -10,8 +10,10 @@
 - [2016 CCF大数据与计算智能大赛的开源资料整理 知乎](https://zhuanlan.zhihu.com/p/24877060)
 - [Wille](https://dnc1994.com/)
 - [2016-12-16 天池比赛链接](https://tianchi.aliyun.com/competition/entrance/231587/introduction)
+
 ### 高质量
 
+- [ github](https://github.com/chenkkkk/TianChi_O2O_forecast)
 - [往年 第一名 源码](https://github.com/wepe/O2O-Coupon-Usage-Forecast)
 - [Xgboost实践+第一名天池o2o优惠券的使用预测思路完整版](https://blog.csdn.net/weixin_42001089/article/details/85013073)
 - [初赛第二名，复赛第三名 csdn](https://blog.csdn.net/bryan__/article/details/53907292)

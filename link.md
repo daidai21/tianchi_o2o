@@ -13,7 +13,7 @@
 
 ### 高质量
 
-- [ github](https://github.com/chenkkkk/TianChi_O2O_forecast)
+- [现在第一的源码 github](https://github.com/chenkkkk/TianChi_O2O_forecast)
 - [往年 第一名 源码](https://github.com/wepe/O2O-Coupon-Usage-Forecast)
 - [Xgboost实践+第一名天池o2o优惠券的使用预测思路完整版](https://blog.csdn.net/weixin_42001089/article/details/85013073)
 - [初赛第二名，复赛第三名 csdn](https://blog.csdn.net/bryan__/article/details/53907292)
@@ -29,3 +29,7 @@
 ### 杂
 - https://jiayi797.github.io/2017/03/11/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E5%AE%9E%E8%B7%B5-O2O%E4%BC%98%E6%83%A0%E5%88%B8%E9%A2%84%E6%B5%8B-%E5%AF%B9%E7%AC%AC%E4%B8%80%E5%90%8D%E7%9A%84%E6%80%9D%E8%B7%AF%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89/
 - https://jiayi797.github.io/2017/03/03/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E5%AE%9E%E8%B7%B5-O2O%E4%BC%98%E6%83%A0%E5%88%B8%E9%A2%84%E6%B5%8B-%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93/
+- [天池 o2o 参考代码](https://tianchi.aliyun.com/notebook-ai/detail?postId=23504)
+- [100行代码入门天池O2O优惠券使用新人赛【精简教程版】](https://tianchi.aliyun.com/notebook-ai/detail?postId=8462)
+- [O2O优惠券使用新人赛-初试](https://tianchi.aliyun.com/notebook-ai/detail?postId=4796)
+- [天池新人实战赛o2o优惠券使用预测](https://tianchi.aliyun.com/notebook-ai/detail?postId=42859)

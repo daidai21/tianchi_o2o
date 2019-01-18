@@ -726,7 +726,7 @@ def get_train_data():
         data_2 = get_offline_features(data_2, pd.concat([data_off_1, data_off_2]))
         data_2 = get_online_features(pd.concat([data_on_1, data_on_2]), data_2)
 
-        data = pd.concat([data_1, data_2])
+        data = pd.concat([data_1, data_2])  # 数据合并与重塑
 
         # undersampling
         # if undersampling:

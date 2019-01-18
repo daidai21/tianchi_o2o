@@ -1,0 +1,67 @@
+# 代码
+
+- `drop_columns`  删除列
+- `get_preprocess_data`  获取预处理数据
+  - 作用：填充缺失值、数据类型转换
+- `task`  任务
+- `get_offline_features`  获取线下特征
+  - 作用：特征提取
+  - 总共93个特征：
+    - 用户特征36
+    - 线下商户特征22
+    - 线下优惠券特征11
+    - 用户商户特征12
+    - 其他特征12
+- `get_online_features`  获取线上特征
+  - 作用：特征提取
+  - 总共13个特征
+- `get_train_data`  获取训练数据
+  - 作用：数据读取和 分割组合等
+- `analysis`  分析
+  - 作用：
+  - 输入：
+  - 打印：
+  - 输出：保存note.csv
+- `detect_duplicate_columns`  检测重复列
+- `feature_importance_score`  特征重要性评分
+  - 作用：
+  - 输入：
+  - 打印：
+    - plt绘图
+    - Feature Importance Score
+  - 输出：
+- `feature_selection`  特征选择
+- `fit_eval_metric`  拟合评估指标
+  - 输出：评估量
+- `grid_search`  网格搜索
+- `grid_search_auto`  网格搜索自动
+- `grid_search_gbdt`  网格搜索gbdt
+- `grid_search_xgb`  网格搜索xgb
+- `grid_search_lgb`  网格搜索lgb
+- `grid_search_cat`  网格搜索cat
+- `grid_search_rf`  网格搜索rf
+- `grid_search_et`  网格搜索et
+- `train_gbdt`  训练gbdt
+- `train_xgb`  训练xgb
+- `train_lgb`  训练lgb
+- `train_cat`  训练cat
+- `train_rf`  训练rf
+- `train_rf_gini`  训练rf 基尼
+- `train_rf_entropy`  训练rf 熵
+- `train_et`  训练et
+- `train_et_gini`  训练et 基尼
+- `train_et_entropy`  训练et 熵
+- `train`  训练
+- `predict`  预测
+- `blending`  融合
+
+# 结构
+
+- 模型
+  - gbdt  `sklearn.ensemble.GradientBoostingClassifier`  梯度提升树
+  - xgb  `xgboost.sklearn.XGBClassifier`  xgboost
+  - lgb  `lightgbm.LGBMClassifier`  lightgbm
+  - cat  `catboost.CatBoostClassifier`  catboost
+  - rf  `sklearn.ensemble.RandomForestClassifier`  随机森林
+  - et  `sklearn.ensemble.ExtraTreesClassifier`  额外树
+    - 在数据集的不同子样本上匹配多个随机决策树

@@ -8,7 +8,7 @@ auc：0.52054151
 '''
 
 
-
+'''
 # import package
 import pickle
 import numpy as np
@@ -205,9 +205,10 @@ dftest1 = dftest[['User_id', 'Coupon_id', 'Date_received']].copy()
 dftest1['label'] = y_test_pred[:, 1]
 dftest1.to_csv('sample_submission.csv', index=False, header=False)
 dftest1.head()
-
-
 '''
+
+
+
 # myself add
 print(dftest1.head())
 
@@ -404,7 +405,6 @@ print(dftest1.head())
 dftest1.to_csv('sample_submission.csv', index=False, header=False)
 
 
-'''
 
 
 '''

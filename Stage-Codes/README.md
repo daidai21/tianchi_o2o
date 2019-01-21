@@ -45,12 +45,12 @@
       - 其他特征12
     - 线下总共13个特征
   - 模型：
-    - 梯度提升树 GradientBoostingClassifier
+    - 梯度提升树 GradientBoostingClassifier 
     - xgboost XGBClassifier
     - lightgbm LGBMClassifier
     - catboost CatBoostClassifier
     - 随机森林 RandomForestClassifier
-    - 额外树 ExtraTreesClassifier
+    - 极限随机树 ExtraTreesClassifier
 - 总结
   - 使用了网格搜索、模型融合
   - 代码质量不认直视；一个文件32个函数；方向思路可参考

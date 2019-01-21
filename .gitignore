@@ -1,6 +1,7 @@
 # setting ignore file
 
-### data set
+# data set
 *.csv
 *.zip
 *.rar
+*.pkl

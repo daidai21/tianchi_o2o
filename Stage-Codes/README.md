@@ -65,27 +65,52 @@
 - 工作:复现代码
 - 链接:[生活大实惠：O2O优惠券使用预测](https://github.com/bike5/O2O)
 - 方法:
+  - 样本
+  - 特征
+  - 模型：Xgboost
 - 总结
-  - 无
+  - 要考虑样本分布不均；深刻理解题意；特征最重要
 - 文件目录
   - 提交的csv文件
+  - 第一阶段代码
+  - 第二阶段代码
 
 ### 阶段-5
 
 - auc:0.78835
 - 工作:复现代码
-- 链接:
+- 链接:[python-Machine-learning/Xgboost/](https://github.com/Mryangkaitong/python-Machine-learning/tree/master/Xgboost)
 - 方法:
+  - 样本
+  - 特征
+  - 模型：xgboost
 - 总结
   - xgboost性能还不错
 - 文件目录
+  - Data_Preprocessed | 预处理过的数据
+  - Feature-Produce.ipynb | 提取特征
+  - Xgboost.ipynb | 模型训练
+  - 自己复现&修改
+    - ProcessDataSet1.csv | 预处理后数据集
+    - ProcessDataSet2.csv | 预处理后数据集
+    - ProcessDataSet3.csv | 预处理后数据集
+    - xgb_feature_score.csv | 特征分数
+    - xgbmodel | 模型
+    - xgbmodel1 | 模型
+    - xgb_preds.csv | 预测的数据（这里提交的csv文件是xgb_preds.csv）
+    - xgb_preds2.csv | 预测的数据
+    - xgboost-复现.py
+    - 复现xgboost--预测.py
 
 ### 阶段-6
 
 - auc:0.78525997
 - 工作:复现代码
-- 链接:
+- 链接:[python-Machine-learning/Xgboost/](https://github.com/Mryangkaitong/python-Machine-learning/tree/master/Xgboost)
 - 方法:
-- 总结
-  - xgboost性能还不错；训练样本。。。；貌似过拟合了
+- 总结:
+  - xgboost性能还不错；训练样本貌似过拟合了
 - 文件目录
+  - 同上 阶段-5（这里提交的csv文件是xgb_preds2.csv）
+
+### 阶段-7

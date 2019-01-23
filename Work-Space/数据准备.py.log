@@ -1,0 +1,8 @@
+2019-01-22 15:30:16
+time: 0:12:41
+----------------------------------------------------
+2019-01-22 16:20:11
+grid search: XGBClassifier
+{'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+time: 8:04:50
+----------------------------------------------------

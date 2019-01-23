@@ -150,9 +150,9 @@ def metricsProAll(testData, trainData, label, label6, coupon6):
     num_round = 100
     bst = xgb.train(params,dtrain,num_round,watchlist)
     prob = list(bst.predict(dtest))
-    
+
     computeAuc(prob,y_test,coupon6)
-    
+
     return bst  
     
 

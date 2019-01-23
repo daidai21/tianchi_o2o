@@ -1,0 +1,16 @@
+2019-01-23 05:35:20
+gbdt, learning_rate: 0.010, n_estimators: 1900, max_depth: 9, min_samples_split: 200, min_samples_leaf: 50, subsample: 0.8
+
+  accuracy: 0.936192
+       auc: 0.902994
+coupon auc: 0.788201
+
+  accuracy: 0.936192
+       auc: 0.902994
+coupon auc: 0.788201
+
+time: 3:51:42
+----------------------------------------------------
+2019-01-23 11:49:03
+time: 0:00:13
+----------------------------------------------------

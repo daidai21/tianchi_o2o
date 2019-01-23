@@ -3,6 +3,7 @@
 
 '''
 using: 复现0.786的代码
+# 把预测的submit给排序了。。。
 link：https://github.com/Mryangkaitong/python-Machine-learning/tree/master/Xgboost
 auc：0.78835167
 '''

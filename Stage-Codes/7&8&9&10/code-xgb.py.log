@@ -1,0 +1,60 @@
+2019-01-23 03:09:26
+xgb, learning_rate: 0.010, n_estimators: 1290, max_depth: 8, min_child_weight: 4, gamma: 0.1, subsample: 0.8, colsample_bytree: 0.8
+
+  accuracy: 0.936285
+       auc: 0.902952
+coupon auc: 0.788588
+
+time: 0:04:06
+----------------------------------------------------
+2019-01-23 03:34:12
+time: 0:00:06
+----------------------------------------------------
+2019-01-23 03:46:49
+xgb, learning_rate: 0.010, n_estimators: 1260, max_depth: 8, min_child_weight: 4, gamma: 0.2, subsample: 0.6, colsample_bytree: 0.8
+
+  accuracy: 0.936151
+       auc: 0.902943
+coupon auc: 0.788860
+
+time: 0:04:01
+----------------------------------------------------
+2019-01-23 03:51:58
+time: 0:00:07
+----------------------------------------------------
+2019-01-23 03:54:05
+xgb, learning_rate: 0.100, n_estimators: 80, max_depth: 8, min_child_weight: 3, gamma: 0.2, subsample: 0.8, colsample_bytree: 0.8
+
+  accuracy: 0.935009
+       auc: 0.900416
+coupon auc: 0.784475
+
+time: 0:00:38
+----------------------------------------------------
+2019-01-23 03:56:48
+time: 0:00:04
+----------------------------------------------------
+2019-01-23 03:58:11
+xgb, learning_rate: 0.100, n_estimators: 80, max_depth: 8, min_child_weight: 3, gamma: 0.2, subsample: 0.8, colsample_bytree: 0.8
+
+  accuracy: 0.935009
+       auc: 0.900416
+coupon auc: 0.784475
+
+time: 0:00:40
+----------------------------------------------------
+2019-01-23 03:59:42
+time: 0:00:04
+----------------------------------------------------
+2019-01-23 04:29:53
+xgb, learning_rate: 0.010, n_estimators: 5000, max_depth: 8, min_child_weight: 4, gamma: 0.1, subsample: 0.8, colsample_bytree: 0.8
+
+  accuracy: 0.936275
+       auc: 0.897815
+coupon auc: 0.779099
+
+time: 0:27:57
+----------------------------------------------------
+2019-01-23 04:59:41
+time: 0:04:11
+----------------------------------------------------

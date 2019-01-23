@@ -27,7 +27,7 @@ from math import ceil  # 向上取整
 
 # from catboost import CatBoostClassifier
 # from lightgbm import LGBMClassifier
-from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, ExtraTreesClassifier
+# from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, ExtraTreesClassifier
 # from sklearn.externals import joblib
 # from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
@@ -949,6 +949,41 @@ def fit_eval_metric(estimator, X, y, name=None):
 # ===================================
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 
+def train_xgb(model=False):
+    print('train_xgb')
+    '''
+    input:
+    output:
+    '''
+    global log
+
+    params = grid_search_xgb(True)
+
+    clf = XGBClassifier().set_params(**params)
+
+    if model:
+        return clf
+
+    params = clf.get_params()
+    log += 'xgb'
+    log += ', learning_rate: %.3f' % params['learning_rate']
+    log += ', n_estimators: %d' % params['n_estimators']
+    log += ', max_depth: %d' % params['max_depth']
+    log += ', min_child_weight: %d' % params['min_child_weight']
+    log += ', gamma: %.1f' % params['gamma']
+    log += ', subsample: %.1f' % params['subsample']
+    log += ', colsample_bytree: %.1f' % params['colsample_bytree']
+    log += '\n\n'
+
+    model = train(clf)
+    file = open('xgb-model.pkl', 'wb')
+    pickle.dump(model, file)
+    file.close()
+
+    print('train_xgb end')
+    return 
+
+
 def grid_search(estimator, param_grid):
     print('grid_search')
     '''
@@ -1056,79 +1091,94 @@ def grid_search_auto(steps, params, estimator):
     print('grid_search_auto end')
 
 
-def grid_search_gbdt(get_param=False):
-    print('# grid_search_gbdt')
 
+def grid_search_xgb(get_param=False):
+    print('grid_search_xgb')
+    '''
+    input:
+    output:
+    '''
     params = {
+        # all
+        # 'learning_rate': 1e-1,
+        # 'n_estimators': 80,
+        # 'max_depth': 8,
+        # 'min_child_weight': 3,
+        # 'gamma': .2,
+        # 'subsample': .8,
+        # 'colsample_bytree': .8,
+
         # 10
         # 'learning_rate': 1e-2,
-        # 'n_estimators': 1900,
-        # 'max_depth': 9,
-        # 'min_samples_split': 200,
-        # 'min_samples_leaf': 50,
+        # 'n_estimators': 1260,
+        # 'max_depth': 8,
+        # 'min_child_weight': 4,
+        # 'gamma': .2,
+        # 'subsample': .6,
+        # 'colsample_bytree': .8,
+        # 'scale_pos_weight': 1,
+        # 'reg_alpha': 0,
+
+        # 没标
+        # 'learning_rate': 1e-1,
+        # 'n_estimators': 80,
+        # 'max_depth': 8,
+        # 'min_child_weight': 3,
+        # 'gamma': .2,
         # 'subsample': .8,
+        # 'colsample_bytree': .8,
+        # 'scale_pos_weight': 1,
+        # 'reg_alpha': 0,
 
-        'learning_rate': 1e-1,
-        'n_estimators': 200,
+        # 自己网格搜索的参数
+        # 'learning_rate': 1e-2,
+        # 'n_estimators': 1290,
+        # 'max_depth': 8,
+        # 'min_child_weight': 4,
+        # 'gamma': .1,
+        # 'subsample': .8,
+        # 'colsample_bytree': .8,
+        # 'scale_pos_weight': 1,
+        # 'reg_alpha': 0.1,
+
+        # 自己网格搜索的参数&迭代次数改为5000
+        'learning_rate': 1e-2,
+        'n_estimators': 5000,
         'max_depth': 8,
-        'min_samples_split': 200,
-        'min_samples_leaf': 50,
+        'min_child_weight': 4,
+        'gamma': .1,
         'subsample': .8,
+        'colsample_bytree': .8,
+        'scale_pos_weight': 1,
+        'reg_alpha': 0.1,
 
-        'random_state': 0
+        'n_jobs': cpu_jobs,
+        'seed': 0
     }
 
     if get_param:
         return params
 
     steps = {
-        'n_estimators': {'step': 100, 'min': 1, 'max': 'inf'},
+        'n_estimators': {'step': 10, 'min': 1, 'max': 'inf'},
         'max_depth': {'step': 1, 'min': 1, 'max': 'inf'},
-        'min_samples_split': {'step': 10, 'min': 2, 'max': 'inf'},
-        'min_samples_leaf': {'step': 10, 'min': 1, 'max': 'inf'},
+        'min_child_weight': {'step': 1, 'min': 1, 'max': 'inf'},
+        'gamma': {'step': .1, 'min': 0, 'max': 1},
         'subsample': {'step': .1, 'min': .1, 'max': 1},
+        'colsample_bytree': {'step': .1, 'min': .1, 'max': 1},
+        'scale_pos_weight': {'step': 1, 'min': 1, 'max': 10},
+        'reg_alpha': {'step': .1, 'min': 0, 'max': 1},
     }
 
-    grid_search_auto(steps, params, GradientBoostingClassifier())
+    grid_search_auto(steps, params, XGBClassifier())
 
-    print('# grid_search_gbdt end')
+    print('grid_search_xgb end')
+
 
 
 # ===================================
 # ==========模型训练==========
 # ===================================
-def train_gbdt(model=False):
-    print('# train_gbdt')
-
-    global log
-
-    params = grid_search_gbdt(True)
-    clf = GradientBoostingClassifier().set_params(**params)
-
-    if model:
-        return clf
-
-    params = clf.get_params()
-    log += 'gbdt'
-    log += ', learning_rate: %.3f' % params['learning_rate']
-    log += ', n_estimators: %d' % params['n_estimators']
-    log += ', max_depth: %d' % params['max_depth']
-    log += ', min_samples_split: %d' % params['min_samples_split']
-    log += ', min_samples_leaf: %d' % params['min_samples_leaf']
-    log += ', subsample: %.1f' % params['subsample']
-    log += '\n\n'
-
-    model = train(clf)
-    file = open('gdbt-model.pkl', 'wb')
-    pickle.dump(model, file)
-    file.close()
-    print('# train_gbdt end')
-
-    return train(clf)
-
-
-
-
 def train(clf):
     print('train')
     '''
@@ -1217,10 +1267,9 @@ def predict(model):
     else:
         # clf = eval('train_%s' % model)()
 
-        file = open('gdbt-model.pkl', 'rb')
+        file = open('xgb-model.pkl', 'rb')
         clf = pickle.load(file)
         file.close()
-
         predict = clf.predict_proba(X)[:, 1]
 
     sample_submission['Probability'] = predict
@@ -1249,9 +1298,9 @@ if __name__ == "__main__":
     # detect_duplicate_columns()
     # feature_importance_score()  # 特征重要性打分
 
-    # grid_search_gbdt()  # 网格搜索gdbt模型
-    # train_gbdt()  # 训练gdbt模型
-    predict('gbdt')  # 预测gdbt模型
+    # grid_search_xgb()  # 网格搜索xgb模型的最优参数
+    # train_xgb()  # 训练xgb模型
+    predict('xgb')  # 使用xgb模型预测
 
     log += 'time: %s\n' % str((datetime.datetime.now() - start)).split('.')[0]
     log += '----------------------------------------------------\n'
@@ -1266,9 +1315,648 @@ if __name__ == "__main__":
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 # log print
 '''
-2019-01-23 05:35:20
-# train_gbdt
-# grid_search_gbdt
+2019-01-22 15:30:16
+132943 11
+# ==========用户特征==========
+# ==========商户特征==========
+# ==========优惠券特征==========
+# ==========用户-商户特征==========
+# ==========其他特征==========
+0,1,2,3,4,5,6,time: 0:03:22
+132943 111
+132943 124
+----------
+# ==========线上特征==========
+252586 11
+# ==========用户特征==========
+# ==========商户特征==========
+# ==========优惠券特征==========
+# ==========用户-商户特征==========
+# ==========其他特征==========
+0,1,2,3,4,5,6,time: 0:07:13
+252586 111
+252586 124
+----------
+# ==========线上特征==========
+2019-01-22 15:30:16
+time: 0:12:41
+----------------------------------------------------
+'''
+# ===================================
+
+
+'''
+2019-01-22 16:20:11
+grid_search_xgb
+grid_search_auto
+grid_search
+--------------------------------------------
+2019-01-22 16:20:11
+{'n_estimators': array([1250, 1260, 1270])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+^Pfit_eval_metric end
+0.89927 (+/-0.00505) for {'n_estimators': 1250}
+0.89927 (+/-0.00507) for {'n_estimators': 1260}
+0.89928 (+/-0.00507) for {'n_estimators': 1270}
+
+best params {'n_estimators': 1270}
+best score 0.8992800136276925
+time: 0:24:09
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 16:44:20
+{'n_estimators': array([1280])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89927 (+/-0.00508) for {'n_estimators': 1280}
+
+best params {'n_estimators': 1280}
+best score 0.8992721170348597
+time: 0:10:22
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 16:54:43
+{'max_depth': array([7, 8, 9])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89888 (+/-0.00491) for {'max_depth': 7}
+0.89928 (+/-0.00507) for {'max_depth': 8}
+0.89918 (+/-0.00494) for {'max_depth': 9}
+
+best params {'max_depth': 8}
+best score 0.8992800136276925
+time: 0:24:03
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 17:18:47
+{'min_child_weight': array([3, 4, 5])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89899 (+/-0.00487) for {'min_child_weight': 3}
+0.89928 (+/-0.00507) for {'min_child_weight': 4}
+0.89912 (+/-0.00491) for {'min_child_weight': 5}
+
+best params {'min_child_weight': 4}
+best score 0.8992800136276925
+time: 0:23:41
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 17:42:28
+{'gamma': array([0.1, 0.2, 0.3])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89921 (+/-0.00496) for {'gamma': 0.1}
+0.89928 (+/-0.00507) for {'gamma': 0.2}
+0.89919 (+/-0.00487) for {'gamma': 0.30000000000000004}
+
+best params {'gamma': 0.2}
+best score 0.8992800136276925
+time: 0:23:43
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 18:06:12
+{'subsample': array([0.5, 0.6, 0.7])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89887 (+/-0.00509) for {'subsample': 0.5}
+0.89928 (+/-0.00507) for {'subsample': 0.6}
+0.89939 (+/-0.00472) for {'subsample': 0.7}
+
+best params {'subsample': 0.7}
+best score 0.8993860900649566
+time: 0:23:33
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 18:29:45
+{'subsample': array([0.8])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89968 (+/-0.00418) for {'subsample': 0.7999999999999999}
+
+best params {'subsample': 0.7999999999999999}
+best score 0.8996808728496932
+time: 0:10:26
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 18:40:12
+{'subsample': array([0.9])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89953 (+/-0.00475) for {'subsample': 0.8999999999999999}
+
+best params {'subsample': 0.8999999999999999}
+best score 0.899529311190782
+time: 0:33:09
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 19:13:22
+{'colsample_bytree': array([0.7, 0.8, 0.9])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+^[[Dfit_eval_metric end
+0.89956 (+/-0.00467) for {'colsample_bytree': 0.7000000000000001}
+0.89968 (+/-0.00418) for {'colsample_bytree': 0.8}
+0.89950 (+/-0.00436) for {'colsample_bytree': 0.9}
+
+best params {'colsample_bytree': 0.8}
+best score 0.8996808728496932
+time: 0:24:19
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 19:37:42
+{'scale_pos_weight': array([1, 2])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89968 (+/-0.00418) for {'scale_pos_weight': 1}
+0.89884 (+/-0.00439) for {'scale_pos_weight': 2}
+
+best params {'scale_pos_weight': 1}
+best score 0.8996808728496932
+time: 0:33:14
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 20:10:57
+{'reg_alpha': array([0. , 0.1])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89968 (+/-0.00418) for {'reg_alpha': 0.0}
+0.89968 (+/-0.00454) for {'reg_alpha': 0.1}
+
+best params {'reg_alpha': 0.1}
+best score 0.8996842899696718
+time: 0:17:20
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 20:28:17
+{'reg_alpha': array([0.2])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89961 (+/-0.00442) for {'reg_alpha': 0.2}
+
+best params {'reg_alpha': 0.2}
+best score 0.8996113403607712
+time: 0:10:26
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+--------------------------------------------
+new grid search
+grid_search
+--------------------------------------------
+2019-01-22 20:38:44
+{'n_estimators': array([1260, 1270, 1280])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89967 (+/-0.00456) for {'n_estimators': 1260}
+0.89968 (+/-0.00454) for {'n_estimators': 1270}
+0.89971 (+/-0.00455) for {'n_estimators': 1280}
+
+best params {'n_estimators': 1280}
+best score 0.8997062593915979
+time: 0:24:33
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1280, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 21:03:18
+{'n_estimators': array([1290])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89972 (+/-0.00455) for {'n_estimators': 1290}
+
+best params {'n_estimators': 1290}
+best score 0.8997159790322135
+time: 0:10:36
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 21:13:55
+{'n_estimators': array([1300])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89972 (+/-0.00456) for {'n_estimators': 1300}
+
+best params {'n_estimators': 1300}
+best score 0.8997152679853041
+time: 0:10:45
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 21:24:40
+{'max_depth': array([7, 8, 9])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89939 (+/-0.00424) for {'max_depth': 7}
+0.89972 (+/-0.00455) for {'max_depth': 8}
+0.89932 (+/-0.00452) for {'max_depth': 9}
+
+best params {'max_depth': 8}
+best score 0.8997159790322135
+time: 0:25:03
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 21:49:44
+{'min_child_weight': array([3, 4, 5])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89962 (+/-0.00443) for {'min_child_weight': 3}
+0.89972 (+/-0.00455) for {'min_child_weight': 4}
+0.89968 (+/-0.00484) for {'min_child_weight': 5}
+
+best params {'min_child_weight': 4}
+best score 0.8997159790322135
+time: 0:24:50
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 22:14:34
+{'gamma': array([0.1, 0.2, 0.3])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89981 (+/-0.00437) for {'gamma': 0.1}
+0.89972 (+/-0.00455) for {'gamma': 0.2}
+0.89971 (+/-0.00423) for {'gamma': 0.30000000000000004}
+
+best params {'gamma': 0.1}
+best score 0.899814704200253
+time: 0:25:01
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 22:39:35
+{'gamma': array([0.])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89968 (+/-0.00446) for {'gamma': 0.0}
+
+best params {'gamma': 0.0}
+best score 0.8996752655082665
+time: 0:10:35
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 22:50:11
+{'subsample': array([0.7, 0.8, 0.9])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89938 (+/-0.00490) for {'subsample': 0.7}
+0.89981 (+/-0.00437) for {'subsample': 0.7999999999999999}
+0.89952 (+/-0.00456) for {'subsample': 0.8999999999999999}
+
+best params {'subsample': 0.7999999999999999}
+best score 0.899814704200253
+time: 0:24:43
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 23:14:54
+{'colsample_bytree': array([0.7, 0.8, 0.9])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89962 (+/-0.00485) for {'colsample_bytree': 0.7000000000000001}
+0.89981 (+/-0.00437) for {'colsample_bytree': 0.8}
+0.89956 (+/-0.00440) for {'colsample_bytree': 0.9}
+
+best params {'colsample_bytree': 0.8}
+best score 0.899814704200253
+time: 0:23:59
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 23:38:54
+{'scale_pos_weight': array([1, 2])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89981 (+/-0.00437) for {'scale_pos_weight': 1}
+0.89877 (+/-0.00425) for {'scale_pos_weight': 2}
+
+best params {'scale_pos_weight': 1}
+best score 0.899814704200253
+time: 0:17:07
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+grid_search
+--------------------------------------------
+2019-01-22 23:56:01
+{'reg_alpha': array([0. , 0.1, 0.2])}
+
+get_train_data
+get_train_data | end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
+  warnings.warn(CV_WARNING, FutureWarning)
+fit_eval_metric end
+0.89965 (+/-0.00444) for {'reg_alpha': 0.0}
+0.89981 (+/-0.00437) for {'reg_alpha': 0.1}
+0.89967 (+/-0.00456) for {'reg_alpha': 0.2}
+
+best params {'reg_alpha': 0.1}
+best score 0.899814704200253
+time: 0:29:00
+
+grid_search
+XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+--------------------------------------------
+grid_search_auto end
+grid_search_xgb end
+2019-01-22 16:20:11
+grid search: XGBClassifier
+{'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
+time: 8:04:50
+----------------------------------------------------
+'''
+# ===================================
+
+
+'''
+2019-01-23 02:19:27
+feature_importance_score
+train_xgb
+grid_search_xgb
+train_xgb end
+train
+get_train_data
+get_preprocess_data
+get_preprocess_data end
+# ==========线下特征 开始==========
+132943 11
+# ==========用户特征==========
+# ==========商户特征==========
+# ==========优惠券特征==========
+# ==========用户-商户特征==========
+# ==========其他特征==========
+task
+0,task
+1,task
+2,task
+3,task
+4,task
+5,task
+6,task end
+task end
+task end
+task end
+task end
+task end
+task end
+time: 0:03:15
+132943 111
+# ==========线下特征 结束==========
+# ==========线上特征 开始==========
+132943 124
+----------
+# ==========线上特征 结束==========
+# ==========线下特征 开始==========
+252586 11
+# ==========用户特征==========
+# ==========商户特征==========
+# ==========优惠券特征==========
+# ==========用户-商户特征==========
+# ==========其他特征==========
+task
+0,task
+1,task
+2,task
+3,task
+4,task
+5,task
+6,task end
+task end
+task end
+task end
+task end
+task end
+task end
+time: 0:06:59
+252586 111
+# ==========线下特征 结束==========
+# ==========线上特征 开始==========
+252586 124
+----------
+# ==========线上特征 结束==========
+drop_columns
+drop_columns
+get_train_data end
+/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
+  FutureWarning)
+fit_eval_metric
+fit_eval_metric end
+train end
+'''
+# ===================================
+
+
+'''
+2019-01-23 03:09:26
+train_xgb
+grid_search_xgb
 train
 get_train_data
 get_train_data end
@@ -1277,27 +1965,14 @@ get_train_data end
 fit_eval_metric
 fit_eval_metric end
 train end
-# train_gbdt end
-train
-get_train_data
-get_train_data end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-^[[B
-fit_eval_metric end
-train end
-2019-01-23 05:35:20
-gbdt, learning_rate: 0.010, n_estimators: 1900, max_depth: 9, min_samples_split: 200, min_samples_leaf: 50, subsample: 0.8
+train_xgb end
+2019-01-23 03:09:26
+xgb, learning_rate: 0.010, n_estimators: 1290, max_depth: 8, min_child_weight: 4, gamma: 0.1, subsample: 0.8, colsample_bytree: 0.8
 
-  accuracy: 0.936192
-       auc: 0.902994
-coupon auc: 0.788201
+  accuracy: 0.936285
+       auc: 0.902952
+coupon auc: 0.788588
 
-  accuracy: 0.936192
-       auc: 0.902994
-coupon auc: 0.788201
-
-time: 3:51:42
+time: 0:04:06
 ----------------------------------------------------
 '''

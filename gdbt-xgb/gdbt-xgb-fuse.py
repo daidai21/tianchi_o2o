@@ -51,7 +51,7 @@ del xgb_df
 # xgb * 0.3 + gdbt * 0.7
 submit_np = copy.deepcopy(gdbt_np)  # deep copy
 for row in range(gdbt_np.shape[0]):  # fuse
-    submit_np[row][3] = 0.3 * gdbt_np[row][3] + 0.7 * xgb_np[row][3]
+    submit_np[row][3] = 0.1 * gdbt_np[row][3] + 0.9 * xgb_np[row][3]
 # print('submit_np', submit_np)
 # submit_df = pd.DataFrame(submit_np, columns=['user_id', 'coupon_id', 'date', 'rate'], dtype=['int64', 'int64', 'int64', 'float64'])
 submit_df = pd.DataFrame(submit_np, columns=['user_id', 'coupon_id', 'date', 'rate'])
@@ -72,4 +72,4 @@ print(submit_df.describe())
 
 
 # save submit to csv
-submit_df.to_csv('submit-(0.3gdbt-0.7xgb).csv', header=False, index=False)
+submit_df.to_csv('submit-(0.1gdbt-0.9xgb).csv', header=False, index=False)

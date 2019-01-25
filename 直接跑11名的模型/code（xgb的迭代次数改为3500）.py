@@ -1,35 +1,21 @@
-# -*- coding:utf-8 -*-
-
-
-'''
-using:就是数据预处理、特征提取、特征选择等等，直到模型训练的前一步
-link:
-'''
-
-
-
-# 电脑的bug而添加的
+# 解决lgb报错
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 
 
 
-# ===================================
-# ==========加载包==========
-# ===================================
-import pickle
 import datetime
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor
-from math import ceil  # 向上取整
+from math import ceil
 
-# from catboost import CatBoostClassifier
-# from lightgbm import LGBMClassifier
-# from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, ExtraTreesClassifier
-# from sklearn.externals import joblib
-# from sklearn.linear_model import LogisticRegression
+from catboost import CatBoostClassifier
+from lightgbm import LGBMClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, ExtraTreesClassifier
+from sklearn.externals import joblib
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 import matplotlib.pyplot as plt
@@ -37,25 +23,12 @@ import pandas as pd
 import numpy as np
 from xgboost.sklearn import XGBClassifier
 
-
-
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# ===================================
-# ==========读取数据 & 预处理==========
-# ===================================
-# ------------------------------------------------------------------------------------------------------------------------------------------------
 pd.set_option('expand_frame_repr', False)
 pd.set_option('display.max_rows', 200)
 pd.set_option('display.max_columns', 200)
 
 
 def drop_columns(X, predict=False):
-    print('drop_columns')
-    '''
-    input:
-    output:
-    '''
     columns = [
         'User_id', 'Merchant_id', 'Discount_rate', 'Date_received', 'discount_rate_x', 'discount_rate_y',
         # 'u33', 'u34'
@@ -68,20 +41,12 @@ def drop_columns(X, predict=False):
 
     X.drop(columns=columns, inplace=True)
 
-    print('drop_columns')
-
-
 
 def get_preprocess_data(predict=False):
-    print('get_preprocess_data')
-    '''
-    input:
-    output:
-    '''
     if predict:
-        offline = pd.read_csv('data/ccf_offline_stage1_test_revised.csv', parse_dates=['Date_received'])
+        offline = pd.read_csv('ccf_offline_stage1_test_revised.csv', parse_dates=['Date_received'])
     else:
-        offline = pd.read_csv('data/ccf_offline_stage1_train.csv', parse_dates=['Date_received', 'Date'])
+        offline = pd.read_csv('ccf_offline_stage1_train.csv', parse_dates=['Date_received', 'Date'])
 
     offline.Distance.fillna(11, inplace=True)
     offline.Distance = offline.Distance.astype(int)
@@ -100,25 +65,17 @@ def get_preprocess_data(predict=False):
     offline.Date.fillna(date_null, inplace=True)
 
     # online
-    online = pd.read_csv('data/ccf_online_stage1_train.csv', parse_dates=['Date_received', 'Date'])
+    online = pd.read_csv('ccf_online_stage1_train.csv', parse_dates=['Date_received', 'Date'])
 
     online.Coupon_id.fillna(0, inplace=True)
     # online.Coupon_id = online.Coupon_id.astype(int)
     online.Date_received.fillna(date_null, inplace=True)
     online.Date.fillna(date_null, inplace=True)
 
-    print('get_preprocess_data end')
-
     return offline, online
 
 
-
 def task(X_chunk, X, counter):
-    print('task')
-    '''
-    input:
-    output:
-    '''
     print(counter, end=',', flush=True)
     X_chunk = X_chunk.copy()
 
@@ -148,30 +105,10 @@ def task(X_chunk, X, counter):
         if len(temp2):
             X_chunk.loc[i, 'o18'] = (temp2.iloc[0].Date_received - user.Date_received).days
 
-    print('task end')
-
     return X_chunk
 
 
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# ===================================
-# ==========特征工程==========
-# ===================================
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-# ===================================
-# ==========线下特征==========
-# ===================================
 def get_offline_features(X, offline):
-    print('# ==========线下特征 开始==========')
-    '''
-    input:
-    output:
-    '''
     # X = X[:1000]
 
     print(len(X), len(X.columns))
@@ -203,8 +140,6 @@ def get_offline_features(X, offline):
     # temp['d4'] = temp.Distance.sum() / len(temp)
     # X = pd.merge(X, temp, how='left', on='Distance')
 
-    # ==========用户特征==========
-    print('# ==========用户特征==========')
     '''user features'''
 
     # 优惠券消费次数
@@ -367,8 +302,6 @@ def get_offline_features(X, offline):
     temp = temp.groupby('User_id').size().reset_index(name='u49')
     X = pd.merge(X, temp, how='left', on='User_id')
 
-    # ==========商户特征==========
-    print('# ==========商户特征==========')
     '''offline merchant features'''
 
     # 商户消费次数
@@ -470,8 +403,6 @@ def get_offline_features(X, offline):
     temp = temp.groupby('Merchant_id').Distance.max().reset_index(name='m23')
     X = pd.merge(X, temp, how='left', on='Merchant_id')
 
-    # ==========优惠券特征==========
-    print('# ==========优惠券特征==========')
     """offline coupon features"""
 
     # 此优惠券一共发行多少张
@@ -519,8 +450,6 @@ def get_offline_features(X, offline):
     temp = temp.drop_duplicates('Coupon_id')
     X = pd.merge(X, temp[['Coupon_id', 'c12']], how='left', on='Coupon_id')
 
-    # ==========用户-商户特征==========
-    print('# ==========用户-商户特征==========')
     '''user merchant feature'''
 
     # 用户领取商家的优惠券次数
@@ -576,8 +505,6 @@ def get_offline_features(X, offline):
     # 用户平均核销每个商家多少张优惠券
     X['um12'] = X.u2 / X.um9
 
-    # ==========其他特征==========
-    print('# ==========其他特征==========')
     '''other feature'''
 
     # 用户领取的所有优惠券数目
@@ -598,7 +525,7 @@ def get_offline_features(X, offline):
     counters = [i for i in range(cpu_jobs)]
 
     start = datetime.datetime.now()
-    with ProcessPoolExecutor() as e:  # 大概GIL全局锁，加速
+    with ProcessPoolExecutor() as e:
         X = pd.concat(e.map(task, X_chunks, X_list, counters))
         print('time:', str(datetime.datetime.now() - start).split('.')[0])
     # multiple threads
@@ -652,21 +579,11 @@ def get_offline_features(X, offline):
     X = pd.merge(X, temp, how='left', on='Merchant_id')
 
     print(len(X), len(X.columns))
-    print('# ==========线下特征 结束==========')
+
     return X
 
 
-
-
-# ===================================
-# ==========线上特征==========
-# ===================================
 def get_online_features(online, X):
-    print('# ==========线上特征 开始==========')
-    '''
-    input:
-    output:
-    '''
     # temp = online[online.Coupon_id == online.Coupon_id]
     # coupon_consume = temp[temp.Date == temp.Date]
     # coupon_no_consume = temp[temp.Date != temp.Date]
@@ -748,22 +665,11 @@ def get_online_features(online, X):
     print(len(X), len(X.columns))
     print('----------')
 
-    print('# ==========线上特征 结束==========')
     return X
 
 
-
-
-# ===================================
-# ==========特征重要性打分==========
-# ===================================
 def get_train_data():
-    print('get_train_data')
-    '''
-    input:
-    output:
-    '''
-    path = 'data/cache_%s_train.csv' % os.path.basename(__file__)
+    path = 'cache_%s_train.csv' % os.path.basename(__file__)
 
     if os.path.exists(path):
         data = pd.read_csv(path)
@@ -830,17 +736,10 @@ def get_train_data():
         data.fillna(0, inplace=True)
         data.to_csv(path, index=False)
 
-    print('get_train_data end')
     return data
 
 
-
 def analysis():
-    print('analysis')
-    '''
-    input:
-    output:
-    '''
     offline, online = get_preprocess_data()
 
     # t = offline.groupby('Discount_rate').size().reset_index(name='receive_count')
@@ -863,22 +762,14 @@ def analysis():
 
     t.to_csv('note.csv')
 
-    plt.bar(temp.Discount_rate.values, temp.total.values)
-    plt.bar(range(num), y1, bottom=y2, fc='r')
-    plt.show()
-
-    print('analysis end')
+    # plt.bar(temp.Discount_rate.values, temp.total.values)
+    # plt.bar(range(num), y1, bottom=y2, fc='r')
+    # plt.show()
 
     exit()
 
 
-
 def detect_duplicate_columns():
-    print('detect_duplicate_columns')
-    '''
-    input:
-    output:
-    '''
     X = get_train_data()
     X = X[:1000]
 
@@ -891,20 +782,10 @@ def detect_duplicate_columns():
             temp = len(X[X[column1] == X[column2]])
             if temp == len(X):
                 print(column1, column2, temp)
-
-    print('detect_duplicate_columns end')
-
     exit()
 
 
-
-
 def feature_importance_score():
-    print('feature_importance_score')
-    '''
-    input:
-    output:
-    '''
     clf = train_xgb()
     fscores = pd.Series(clf.get_booster().get_fscore()).sort_values(ascending=False)
     fscores.plot(kind='bar', title='Feature Importance')
@@ -914,22 +795,23 @@ def feature_importance_score():
 
 
 def feature_selection():
-    print('feature_selection')
-    '''
-    input:
-    output:
-    '''
     data = get_train_data()
-    train_data, test_data = train_test_split(data, train_size=100000, random_state=0)
+
+    train_data, test_data = train_test_split(data,
+                                             train_size=100000,
+                                             random_state=0
+                                             )
 
     X = train_data.copy().drop(columns='Coupon_id')
     y = X.pop('label')
 
-    print('feature_selection end')
+    # sel = VarianceThreshold(threshold=(.8 * (1 - .8)))
+    # X = sel.fit_transform(X)
+    # print(X.shape)
+    # Create the RFE object and rank each pixel
 
 
 def fit_eval_metric(estimator, X, y, name=None):
-    print('fit_eval_metric')
     if name is None:
         name = estimator.__class__.__name__
 
@@ -938,58 +820,10 @@ def fit_eval_metric(estimator, X, y, name=None):
     else:
         estimator.fit(X, y)
 
-    print('fit_eval_metric end')
-
     return estimator
 
 
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# ===================================
-# ==========模型选择==========
-# ===================================
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-
-def train_xgb(model=False):
-    print('train_xgb')
-    '''
-    input:
-    output:
-    '''
-    global log
-
-    params = grid_search_xgb(True)
-
-    clf = XGBClassifier().set_params(**params)
-
-    if model:
-        return clf
-
-    params = clf.get_params()
-    log += 'xgb'
-    log += ', learning_rate: %.3f' % params['learning_rate']
-    log += ', n_estimators: %d' % params['n_estimators']
-    log += ', max_depth: %d' % params['max_depth']
-    log += ', min_child_weight: %d' % params['min_child_weight']
-    log += ', gamma: %.1f' % params['gamma']
-    log += ', subsample: %.1f' % params['subsample']
-    log += ', colsample_bytree: %.1f' % params['colsample_bytree']
-    log += '\n\n'
-
-    model = train(clf)
-    file = open('xgb-model.pkl', 'wb')
-    pickle.dump(model, file)
-    file.close()
-
-    print('train_xgb end')
-    return 
-
-
 def grid_search(estimator, param_grid):
-    print('grid_search')
-    '''
-    input:
-    output:
-    '''
     start = datetime.datetime.now()
 
     print('--------------------------------------------')
@@ -1025,17 +859,10 @@ def grid_search(estimator, param_grid):
     print('time: %s' % str((datetime.datetime.now() - start)).split('.')[0])
     print()
 
-    print('grid_search end')
-
     return clf.best_params_, clf.best_score_
 
 
 def grid_search_auto(steps, params, estimator):
-    print('grid_search_auto')
-    '''
-    input:
-    output:
-    '''
     global log
 
     old_params = params.copy()
@@ -1076,7 +903,8 @@ def grid_search_auto(steps, params, estimator):
                 params[name] = best_params[name]
                 print(estimator.__class__.__name__, params)
 
-                if best_params[name] - step['step'] < step['min'] or (step['max'] != 'inf' and best_params[name] + step['step'] > step['max']):
+                if best_params[name] - step['step'] < step['min'] or (
+                        step['max'] != 'inf' and best_params[name] + step['step'] > step['max']):
                     break
 
         if old_params == params:
@@ -1088,16 +916,42 @@ def grid_search_auto(steps, params, estimator):
     print('--------------------------------------------')
     log += 'grid search: %s\n%r\n' % (estimator.__class__.__name__, params)
 
-    print('grid_search_auto end')
 
+def grid_search_gbdt(get_param=False):
+    params = {
+        # 10
+        'learning_rate': 1e-2,
+        'n_estimators': 1900,
+        'max_depth': 9,
+        'min_samples_split': 200,
+        'min_samples_leaf': 50,
+        'subsample': .8,
+
+        # 'learning_rate': 1e-1,
+        # 'n_estimators': 200,
+        # 'max_depth': 8,
+        # 'min_samples_split': 200,
+        # 'min_samples_leaf': 50,
+        # 'subsample': .8,
+
+        'random_state': 0
+    }
+
+    if get_param:
+        return params
+
+    steps = {
+        'n_estimators': {'step': 100, 'min': 1, 'max': 'inf'},
+        'max_depth': {'step': 1, 'min': 1, 'max': 'inf'},
+        'min_samples_split': {'step': 10, 'min': 2, 'max': 'inf'},
+        'min_samples_leaf': {'step': 10, 'min': 1, 'max': 'inf'},
+        'subsample': {'step': .1, 'min': .1, 'max': 1},
+    }
+
+    grid_search_auto(steps, params, GradientBoostingClassifier())
 
 
 def grid_search_xgb(get_param=False):
-    print('grid_search_xgb')
-    '''
-    input:
-    output:
-    '''
     params = {
         # all
         # 'learning_rate': 1e-1,
@@ -1119,7 +973,6 @@ def grid_search_xgb(get_param=False):
         # 'scale_pos_weight': 1,
         # 'reg_alpha': 0,
 
-        # 没标
         # 'learning_rate': 1e-1,
         # 'n_estimators': 80,
         # 'max_depth': 8,
@@ -1130,35 +983,12 @@ def grid_search_xgb(get_param=False):
         # 'scale_pos_weight': 1,
         # 'reg_alpha': 0,
 
-        # 自己网格搜索的参数
-        # 'learning_rate': 1e-2,
-        # 'n_estimators': 1290,
-        # 'max_depth': 8,
-        # 'min_child_weight': 4,
-        # 'gamma': .1,
-        # 'subsample': .8,
-        # 'colsample_bytree': .8,
-        # 'scale_pos_weight': 1,
-        # 'reg_alpha': 0.1,
-
-        # 自己网格搜索的参数&迭代次数改为5000
-        # 'learning_rate': 1e-2,
-        # 'n_estimators': 5000,
-        # 'max_depth': 8,
-        # 'min_child_weight': 4,
-        # 'gamma': .1,
-        # 'subsample': .8,
-        # 'colsample_bytree': .8,
-        # 'scale_pos_weight': 1,
-        # 'reg_alpha': 0.1,
-
         # 'n_jobs': cpu_jobs,
         # 'seed': 0
 
 
-        # 12名的参数  auc：0.80180
         'learning_rate': 1e-2,
-        'n_estimators': 3500,
+        'n_estimators': 1260,
         'max_depth': 8,
         'min_child_weight': 4,
         'gamma': .2,
@@ -1176,6 +1006,7 @@ def grid_search_xgb(get_param=False):
         # 'colsample_bytree': .8,
         # 'scale_pos_weight': 1,
         # 'reg_alpha': 0,
+        # 'num_boost_round' : 3500,
         'n_jobs': cpu_jobs,
         'seed': 0
     }
@@ -1196,24 +1027,326 @@ def grid_search_xgb(get_param=False):
 
     grid_search_auto(steps, params, XGBClassifier())
 
-    print('grid_search_xgb end')
+
+def grid_search_lgb(get_param=False):
+    params = {
+        # 10
+        'learning_rate': 1e-2,
+        'n_estimators': 1200,
+        'num_leaves': 51,
+        'min_split_gain': 0,
+        'min_child_weight': 1e-3,
+        'min_child_samples': 22,
+        'subsample': .8,
+        'colsample_bytree': .8,
+
+        # 'learning_rate': .1,
+        # 'n_estimators': 90,
+        # 'num_leaves': 50,
+        # 'min_split_gain': 0,
+        # 'min_child_weight': 1e-3,
+        # 'min_child_samples': 21,
+        # 'subsample': .8,
+        # 'colsample_bytree': .8,
+
+        'n_jobs': cpu_jobs,
+        'random_state': 0
+    }
+
+    if get_param:
+        return params
+
+    steps = {
+        'n_estimators': {'step': 100, 'min': 1, 'max': 'inf'},
+        'num_leaves': {'step': 1, 'min': 1, 'max': 'inf'},
+        'min_split_gain': {'step': .1, 'min': 0, 'max': 1},
+        'min_child_weight': {'step': 1e-3, 'min': 1e-3, 'max': 'inf'},
+        'min_child_samples': {'step': 1, 'min': 1, 'max': 'inf'},
+        # 'subsample': {'step': .1, 'min': .1, 'max': 1},
+        'colsample_bytree': {'step': .1, 'min': .1, 'max': 1},
+    }
+
+    grid_search_auto(steps, params, LGBMClassifier())
 
 
+def grid_search_cat(get_param=False):
+    params = {
+        # 10
+        'learning_rate': 1e-2,
+        'n_estimators': 3600,
+        'max_depth': 8,
+        'max_bin': 127,
+        'reg_lambda': 2,
+        'subsample': .7,
 
-# ===================================
-# ==========模型训练==========
-# ===================================
+        # 'learning_rate': 1e-1,
+        # 'iterations': 460,
+        # 'depth': 8,
+        # 'l2_leaf_reg': 8,
+        # 'border_count': 37,
+
+        # 'ctr_border_count': 16,
+        'one_hot_max_size': 2,
+        'bootstrap_type': 'Bernoulli',
+        'leaf_estimation_method': 'Newton',
+        'random_state': 0,
+        'verbose': False,
+        'eval_metric': 'AUC',
+        'thread_count': cpu_jobs
+    }
+
+    if get_param:
+        return params
+
+    steps = {
+        'n_estimators': {'step': 100, 'min': 1, 'max': 'inf'},
+        'max_depth': {'step': 1, 'min': 1, 'max': 'inf'},
+        'max_bin': {'step': 1, 'min': 1, 'max': 255},
+        'reg_lambda': {'step': 1, 'min': 0, 'max': 'inf'},
+        'subsample': {'step': .1, 'min': .1, 'max': 1},
+        'one_hot_max_size': {'step': 1, 'min': 0, 'max': 255},
+    }
+
+    grid_search_auto(steps, params, CatBoostClassifier())
+
+
+def grid_search_rf(criterion='gini', get_param=False):
+    if criterion == 'gini':
+        params = {
+            # 10
+            'n_estimators': 3090,
+            'max_depth': 15,
+            'min_samples_split': 2,
+            'min_samples_leaf': 1,
+
+            'criterion': 'gini',
+            'random_state': 0
+        }
+    else:
+        params = {
+            'n_estimators': 3110,
+            'max_depth': 13,
+            'min_samples_split': 70,
+            'min_samples_leaf': 10,
+            'criterion': 'entropy',
+            'random_state': 0
+        }
+
+    if get_param:
+        return params
+
+    steps = {
+        'n_estimators': {'step': 10, 'min': 1, 'max': 'inf'},
+        'max_depth': {'step': 1, 'min': 1, 'max': 'inf'},
+        'min_samples_split': {'step': 2, 'min': 2, 'max': 'inf'},
+        'min_samples_leaf': {'step': 2, 'min': 1, 'max': 'inf'},
+    }
+
+    grid_search_auto(steps, params, RandomForestClassifier())
+
+
+def grid_search_et(criterion='gini', get_param=False):
+    if criterion == 'gini':
+        params = {
+            # 10
+            'n_estimators': 3060,
+            'max_depth': 22,
+            'min_samples_split': 12,
+            'min_samples_leaf': 1,
+
+            'criterion': 'gini',
+            'random_state': 0,
+        }
+    else:
+        params = {
+            'n_estimators': 3100,
+            'max_depth': 13,
+            'min_samples_split': 70,
+            'min_samples_leaf': 10,
+            'criterion': 'entropy',
+            'random_state': 0
+        }
+
+    if get_param:
+        return params
+
+    steps = {
+        'n_estimators': {'step': 10, 'min': 1, 'max': 'inf'},
+        'max_depth': {'step': 1, 'min': 1, 'max': 'inf'},
+        'min_samples_split': {'step': 2, 'min': 2, 'max': 'inf'},
+        'min_samples_leaf': {'step': 2, 'min': 1, 'max': 'inf'},
+    }
+
+    grid_search_auto(steps, params, ExtraTreesClassifier())
+
+
+def train_gbdt(model=False):
+    global log
+
+    params = grid_search_gbdt(True)
+    clf = GradientBoostingClassifier().set_params(**params)
+
+    if model:
+        return clf
+
+    params = clf.get_params()
+    log += 'gbdt'
+    log += ', learning_rate: %.3f' % params['learning_rate']
+    log += ', n_estimators: %d' % params['n_estimators']
+    log += ', max_depth: %d' % params['max_depth']
+    log += ', min_samples_split: %d' % params['min_samples_split']
+    log += ', min_samples_leaf: %d' % params['min_samples_leaf']
+    log += ', subsample: %.1f' % params['subsample']
+    log += '\n\n'
+
+    return train(clf)
+
+
+def train_xgb(model=False):
+    global log
+
+    params = grid_search_xgb(True)
+
+    clf = XGBClassifier().set_params(**params)
+
+    if model:
+        return clf
+
+    params = clf.get_params()
+    log += 'xgb'
+    log += ', learning_rate: %.3f' % params['learning_rate']
+    log += ', n_estimators: %d' % params['n_estimators']
+    log += ', max_depth: %d' % params['max_depth']
+    log += ', min_child_weight: %d' % params['min_child_weight']
+    log += ', gamma: %.1f' % params['gamma']
+    log += ', subsample: %.1f' % params['subsample']
+    log += ', colsample_bytree: %.1f' % params['colsample_bytree']
+    log += '\n\n'
+
+    return train(clf)
+
+
+def train_lgb(model=False):
+    global log
+
+    params = grid_search_lgb(True)
+
+    clf = LGBMClassifier().set_params(**params)
+
+    if model:
+        return clf
+
+    params = clf.get_params()
+    log += 'lgb'
+    log += ', learning_rate: %.3f' % params['learning_rate']
+    log += ', n_estimators: %d' % params['n_estimators']
+    log += ', num_leaves: %d' % params['num_leaves']
+    log += ', min_split_gain: %.1f' % params['min_split_gain']
+    log += ', min_child_weight: %.4f' % params['min_child_weight']
+    log += ', min_child_samples: %d' % params['min_child_samples']
+    log += ', subsample: %.1f' % params['subsample']
+    log += ', colsample_bytree: %.1f' % params['colsample_bytree']
+    log += '\n\n'
+
+    return train(clf)
+
+
+def train_cat(model=False):
+    global log
+
+    params = grid_search_cat(True)
+
+    clf = CatBoostClassifier().set_params(**params)
+
+    if model:
+        return clf
+
+    params = clf.get_params()
+    log += 'cat'
+    log += ', learning_rate: %.3f' % params['learning_rate']
+    log += ', iterations: %d' % params['iterations']
+    log += ', depth: %d' % params['depth']
+    log += ', l2_leaf_reg: %d' % params['l2_leaf_reg']
+    log += ', border_count: %d' % params['border_count']
+    log += ', subsample: %d' % params['subsample']
+    log += ', one_hot_max_size: %d' % params['one_hot_max_size']
+    log += '\n\n'
+
+    return train(clf)
+
+
+def train_rf(clf):
+    global log
+
+    params = clf.get_params()
+    log += 'rf'
+    log += ', n_estimators: %d' % params['n_estimators']
+    log += ', max_depth: %d' % params['max_depth']
+    log += ', min_samples_split: %d' % params['min_samples_split']
+    log += ', min_samples_leaf: %d' % params['min_samples_leaf']
+    log += ', criterion: %s' % params['criterion']
+    log += '\n\n'
+
+    return train(clf)
+
+
+def train_rf_gini(model=False):
+    clf = RandomForestClassifier().set_params(**grid_search_rf('gini', True))
+    if model:
+        return clf
+    return train_rf(clf)
+
+
+def train_rf_entropy():
+    clf = RandomForestClassifier().set_params(**grid_search_rf('entropy', True))
+
+    return train_rf(clf)
+
+
+def train_et(clf):
+    global log
+
+    params = clf.get_params()
+    log += 'et'
+    log += ', n_estimators: %d' % params['n_estimators']
+    log += ', max_depth: %d' % params['max_depth']
+    log += ', min_samples_split: %d' % params['min_samples_split']
+    log += ', min_samples_leaf: %d' % params['min_samples_leaf']
+    log += ', criterion: %s' % params['criterion']
+    log += '\n\n'
+
+    return train(clf)
+
+
+def train_et_gini(model=False):
+    clf = ExtraTreesClassifier().set_params(**grid_search_et('gini', True))
+    if model:
+        return clf
+    return train_et(clf)
+
+
+def train_et_entropy():
+    clf = ExtraTreesClassifier().set_params(**{
+        'n_estimators': 3100,
+        'max_depth': 13,
+        'min_samples_split': 70,
+        'min_samples_leaf': 10,
+        'criterion': 'entropy',
+        'random_state': 0
+    })
+
+    return train_et(clf)
+
+
 def train(clf):
-    print('train')
-    '''
-    input:
-    output:
-    '''
     global log
 
     data = get_train_data()
 
-    train_data, test_data = train_test_split(data, train_size=100000, random_state=0)
+    train_data, test_data = train_test_split(data,
+                                             train_size=100000,
+                                             random_state=0
+                                             )
 
     _, test_data = train_test_split(data, random_state=0)
 
@@ -1248,22 +1381,11 @@ def train(clf):
 
     log += 'coupon auc: %f\n\n' % np.mean(aucs)
 
-    print('train end')
     return clf
 
 
-
-
-# ===================================
-# ==========模型预测==========
-# ===================================
 def predict(model):
-    print('predict')
-    '''
-    input:
-    output:
-    '''
-    path = 'data/cache_%s_predict.csv' % os.path.basename(__file__)
+    path = 'cache_%s_predict.csv' % os.path.basename(__file__)
 
     if os.path.exists(path):
         X = pd.read_csv(path, parse_dates=['Date_received'])
@@ -1289,11 +1411,7 @@ def predict(model):
     if model is 'blending':
         predict = blending(X)
     else:
-        # clf = eval('train_%s' % model)()
-
-        file = open('xgb-model.pkl', 'rb')
-        clf = pickle.load(file)
-        file.close()
+        clf = eval('train_%s' % model)()
         predict = clf.predict_proba(X)[:, 1]
 
     sample_submission['Probability'] = predict
@@ -1301,702 +1419,123 @@ def predict(model):
                              #  float_format='%.5f',
                              index=False, header=False)
 
-    print('predict end')
+
+def blending(predict_X=None):
+    global log
+    log += '\n'
+
+    X = get_train_data().drop(columns='Coupon_id')
+    y = X.pop('label')
+
+    X = np.asarray(X)
+    y = np.asarray(y)
+
+    _, X_submission, _, y_test_blend = train_test_split(X, y,
+                                                        random_state=0
+                                                        )
+
+    if predict_X is not None:
+        X_submission = np.asarray(predict_X)
+
+    X, _, y, _ = train_test_split(X, y,
+                                  train_size=100000,
+                                  random_state=0
+                                  )
+
+    # np.random.seed(0)
+    # idx = np.random.permutation(y.size)
+    # X = X[idx]
+    # y = y[idx]
+
+    skf = StratifiedKFold()
+    clfs = ['gbdt', 'xgb', 'lgb', 'cat',
+            # 'rf_gini', 'et_gini'
+            ]
+
+    blend_X_train = np.zeros((X.shape[0], len(clfs)))
+    blend_X_test = np.zeros((X_submission.shape[0], len(clfs)))
+
+    for j, v in enumerate(clfs):
+        clf = eval('train_%s' % v)(True)
+
+        aucs = []
+        dataset_blend_test_j = []
+
+        for train_index, test_index in skf.split(X, y):
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+
+            clf = fit_eval_metric(clf, X_train, y_train)
+
+            y_submission = clf.predict_proba(X_test)[:, 1]
+            aucs.append(roc_auc_score(y_test, y_submission))
+
+            blend_X_train[test_index, j] = y_submission
+            dataset_blend_test_j.append(clf.predict_proba(X_submission)[:, 1])
+
+        log += '%7s' % v + ' auc: %f\n' % np.mean(aucs)
+        blend_X_test[:, j] = np.asarray(dataset_blend_test_j).T.mean(1)
+
+    print('blending')
+    clf = LogisticRegression()
+    # clf = GradientBoostingClassifier()
+    clf.fit(blend_X_train, y)
+    y_submission = clf.predict_proba(blend_X_test)[:, 1]
+
+    # Linear stretch of predictions to [0,1]
+    y_submission = (y_submission - y_submission.min()) / (y_submission.max() - y_submission.min())
+    if predict_X is not None:
+        return y_submission
+    log += '\n  blend auc: %f\n\n' % roc_auc_score(y_test_blend, y_submission)
 
 
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# ===================================
-# ==========主调用==========
-# ===================================
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
+if __name__ == '__main__':
     start = datetime.datetime.now()
     print(start.strftime('%Y-%m-%d %H:%M:%S'))
     log = '%s\n' % start.strftime('%Y-%m-%d %H:%M:%S')
     cpu_jobs = os.cpu_count() - 1
     date_null = pd.to_datetime('1970-01-01', format='%Y-%m-%d')
 
-    # get_train_data()  # 获取训练数据
-    # analysis()  # 分析  bug
+    # analysis()
     # detect_duplicate_columns()
-    # feature_importance_score()  # 特征重要性打分
+    # feature_importance_score()
 
-    # grid_search_xgb()  # 网格搜索xgb模型的最优参数
-    # train_xgb()  # 训练xgb模型
-    predict('xgb')  # 使用xgb模型预测
+    # grid_search_gbdt()
+    # train_gbdt()
+    # predict('gbdt')
+
+    # grid_search_xgb()
+    # train_xgb()
+    # predict('xgb')
+
+    # grid_search_lgb()
+    # train_lgb()
+    # predict('lgb')
+
+    # grid_search_cat()
+    # train_cat()
+    # predict('cat')
+
+    # grid_search_rf()
+    # train_rf_gini()
+    # predict('rf_gini')
+
+    # grid_search_rf('entropy')
+    # train_rf_entropy()
+    # predict('rf_entropy')
+
+    # grid_search_et()
+    # train_et_gini()
+    # predict('et_gini')
+
+    # grid_search_et('entropy')
+    # train_et_entropy()
+    # predict('et_entropy')
+
+    # blending()
+    predict('blending')
 
     log += 'time: %s\n' % str((datetime.datetime.now() - start)).split('.')[0]
     log += '----------------------------------------------------\n'
     open('%s.log' % os.path.basename(__file__), 'a').write(log)
     print(log)
-
-
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# log print
-'''
-2019-01-22 15:30:16
-132943 11
-# ==========用户特征==========
-# ==========商户特征==========
-# ==========优惠券特征==========
-# ==========用户-商户特征==========
-# ==========其他特征==========
-0,1,2,3,4,5,6,time: 0:03:22
-132943 111
-132943 124
-----------
-# ==========线上特征==========
-252586 11
-# ==========用户特征==========
-# ==========商户特征==========
-# ==========优惠券特征==========
-# ==========用户-商户特征==========
-# ==========其他特征==========
-0,1,2,3,4,5,6,time: 0:07:13
-252586 111
-252586 124
-----------
-# ==========线上特征==========
-2019-01-22 15:30:16
-time: 0:12:41
-----------------------------------------------------
-'''
-# ===================================
-
-
-'''
-2019-01-22 16:20:11
-grid_search_xgb
-grid_search_auto
-grid_search
---------------------------------------------
-2019-01-22 16:20:11
-{'n_estimators': array([1250, 1260, 1270])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-^Pfit_eval_metric end
-0.89927 (+/-0.00505) for {'n_estimators': 1250}
-0.89927 (+/-0.00507) for {'n_estimators': 1260}
-0.89928 (+/-0.00507) for {'n_estimators': 1270}
-
-best params {'n_estimators': 1270}
-best score 0.8992800136276925
-time: 0:24:09
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 16:44:20
-{'n_estimators': array([1280])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89927 (+/-0.00508) for {'n_estimators': 1280}
-
-best params {'n_estimators': 1280}
-best score 0.8992721170348597
-time: 0:10:22
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 16:54:43
-{'max_depth': array([7, 8, 9])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89888 (+/-0.00491) for {'max_depth': 7}
-0.89928 (+/-0.00507) for {'max_depth': 8}
-0.89918 (+/-0.00494) for {'max_depth': 9}
-
-best params {'max_depth': 8}
-best score 0.8992800136276925
-time: 0:24:03
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 17:18:47
-{'min_child_weight': array([3, 4, 5])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89899 (+/-0.00487) for {'min_child_weight': 3}
-0.89928 (+/-0.00507) for {'min_child_weight': 4}
-0.89912 (+/-0.00491) for {'min_child_weight': 5}
-
-best params {'min_child_weight': 4}
-best score 0.8992800136276925
-time: 0:23:41
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 17:42:28
-{'gamma': array([0.1, 0.2, 0.3])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89921 (+/-0.00496) for {'gamma': 0.1}
-0.89928 (+/-0.00507) for {'gamma': 0.2}
-0.89919 (+/-0.00487) for {'gamma': 0.30000000000000004}
-
-best params {'gamma': 0.2}
-best score 0.8992800136276925
-time: 0:23:43
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.6, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 18:06:12
-{'subsample': array([0.5, 0.6, 0.7])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89887 (+/-0.00509) for {'subsample': 0.5}
-0.89928 (+/-0.00507) for {'subsample': 0.6}
-0.89939 (+/-0.00472) for {'subsample': 0.7}
-
-best params {'subsample': 0.7}
-best score 0.8993860900649566
-time: 0:23:33
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 18:29:45
-{'subsample': array([0.8])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89968 (+/-0.00418) for {'subsample': 0.7999999999999999}
-
-best params {'subsample': 0.7999999999999999}
-best score 0.8996808728496932
-time: 0:10:26
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 18:40:12
-{'subsample': array([0.9])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89953 (+/-0.00475) for {'subsample': 0.8999999999999999}
-
-best params {'subsample': 0.8999999999999999}
-best score 0.899529311190782
-time: 0:33:09
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 19:13:22
-{'colsample_bytree': array([0.7, 0.8, 0.9])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-^[[Dfit_eval_metric end
-0.89956 (+/-0.00467) for {'colsample_bytree': 0.7000000000000001}
-0.89968 (+/-0.00418) for {'colsample_bytree': 0.8}
-0.89950 (+/-0.00436) for {'colsample_bytree': 0.9}
-
-best params {'colsample_bytree': 0.8}
-best score 0.8996808728496932
-time: 0:24:19
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 19:37:42
-{'scale_pos_weight': array([1, 2])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89968 (+/-0.00418) for {'scale_pos_weight': 1}
-0.89884 (+/-0.00439) for {'scale_pos_weight': 2}
-
-best params {'scale_pos_weight': 1}
-best score 0.8996808728496932
-time: 0:33:14
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 20:10:57
-{'reg_alpha': array([0. , 0.1])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89968 (+/-0.00418) for {'reg_alpha': 0.0}
-0.89968 (+/-0.00454) for {'reg_alpha': 0.1}
-
-best params {'reg_alpha': 0.1}
-best score 0.8996842899696718
-time: 0:17:20
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 20:28:17
-{'reg_alpha': array([0.2])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89961 (+/-0.00442) for {'reg_alpha': 0.2}
-
-best params {'reg_alpha': 0.2}
-best score 0.8996113403607712
-time: 0:10:26
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1270, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
---------------------------------------------
-new grid search
-grid_search
---------------------------------------------
-2019-01-22 20:38:44
-{'n_estimators': array([1260, 1270, 1280])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89967 (+/-0.00456) for {'n_estimators': 1260}
-0.89968 (+/-0.00454) for {'n_estimators': 1270}
-0.89971 (+/-0.00455) for {'n_estimators': 1280}
-
-best params {'n_estimators': 1280}
-best score 0.8997062593915979
-time: 0:24:33
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1280, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 21:03:18
-{'n_estimators': array([1290])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89972 (+/-0.00455) for {'n_estimators': 1290}
-
-best params {'n_estimators': 1290}
-best score 0.8997159790322135
-time: 0:10:36
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 21:13:55
-{'n_estimators': array([1300])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89972 (+/-0.00456) for {'n_estimators': 1300}
-
-best params {'n_estimators': 1300}
-best score 0.8997152679853041
-time: 0:10:45
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 21:24:40
-{'max_depth': array([7, 8, 9])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89939 (+/-0.00424) for {'max_depth': 7}
-0.89972 (+/-0.00455) for {'max_depth': 8}
-0.89932 (+/-0.00452) for {'max_depth': 9}
-
-best params {'max_depth': 8}
-best score 0.8997159790322135
-time: 0:25:03
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 21:49:44
-{'min_child_weight': array([3, 4, 5])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89962 (+/-0.00443) for {'min_child_weight': 3}
-0.89972 (+/-0.00455) for {'min_child_weight': 4}
-0.89968 (+/-0.00484) for {'min_child_weight': 5}
-
-best params {'min_child_weight': 4}
-best score 0.8997159790322135
-time: 0:24:50
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.2, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 22:14:34
-{'gamma': array([0.1, 0.2, 0.3])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89981 (+/-0.00437) for {'gamma': 0.1}
-0.89972 (+/-0.00455) for {'gamma': 0.2}
-0.89971 (+/-0.00423) for {'gamma': 0.30000000000000004}
-
-best params {'gamma': 0.1}
-best score 0.899814704200253
-time: 0:25:01
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 22:39:35
-{'gamma': array([0.])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89968 (+/-0.00446) for {'gamma': 0.0}
-
-best params {'gamma': 0.0}
-best score 0.8996752655082665
-time: 0:10:35
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 22:50:11
-{'subsample': array([0.7, 0.8, 0.9])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89938 (+/-0.00490) for {'subsample': 0.7}
-0.89981 (+/-0.00437) for {'subsample': 0.7999999999999999}
-0.89952 (+/-0.00456) for {'subsample': 0.8999999999999999}
-
-best params {'subsample': 0.7999999999999999}
-best score 0.899814704200253
-time: 0:24:43
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 23:14:54
-{'colsample_bytree': array([0.7, 0.8, 0.9])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89962 (+/-0.00485) for {'colsample_bytree': 0.7000000000000001}
-0.89981 (+/-0.00437) for {'colsample_bytree': 0.8}
-0.89956 (+/-0.00440) for {'colsample_bytree': 0.9}
-
-best params {'colsample_bytree': 0.8}
-best score 0.899814704200253
-time: 0:23:59
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 23:38:54
-{'scale_pos_weight': array([1, 2])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89981 (+/-0.00437) for {'scale_pos_weight': 1}
-0.89877 (+/-0.00425) for {'scale_pos_weight': 2}
-
-best params {'scale_pos_weight': 1}
-best score 0.899814704200253
-time: 0:17:07
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-grid_search
---------------------------------------------
-2019-01-22 23:56:01
-{'reg_alpha': array([0. , 0.1, 0.2])}
-
-get_train_data
-get_train_data | end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2053: FutureWarning: You should specify a value for 'cv' instead of relying on the default value. The default value will change from 3 to 5 in version 0.22.
-  warnings.warn(CV_WARNING, FutureWarning)
-fit_eval_metric end
-0.89965 (+/-0.00444) for {'reg_alpha': 0.0}
-0.89981 (+/-0.00437) for {'reg_alpha': 0.1}
-0.89967 (+/-0.00456) for {'reg_alpha': 0.2}
-
-best params {'reg_alpha': 0.1}
-best score 0.899814704200253
-time: 0:29:00
-
-grid_search
-XGBClassifier {'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
---------------------------------------------
-grid_search_auto end
-grid_search_xgb end
-2019-01-22 16:20:11
-grid search: XGBClassifier
-{'learning_rate': 0.01, 'n_estimators': 1290, 'max_depth': 8, 'min_child_weight': 4, 'gamma': 0.1, 'subsample': 0.7999999999999999, 'colsample_bytree': 0.8, 'scale_pos_weight': 1, 'reg_alpha': 0.1, 'n_jobs': 7, 'seed': 0}
-time: 8:04:50
-----------------------------------------------------
-'''
-# ===================================
-
-
-'''
-2019-01-23 02:19:27
-feature_importance_score
-train_xgb
-grid_search_xgb
-train_xgb end
-train
-get_train_data
-get_preprocess_data
-get_preprocess_data end
-# ==========线下特征 开始==========
-132943 11
-# ==========用户特征==========
-# ==========商户特征==========
-# ==========优惠券特征==========
-# ==========用户-商户特征==========
-# ==========其他特征==========
-task
-0,task
-1,task
-2,task
-3,task
-4,task
-5,task
-6,task end
-task end
-task end
-task end
-task end
-task end
-task end
-time: 0:03:15
-132943 111
-# ==========线下特征 结束==========
-# ==========线上特征 开始==========
-132943 124
-----------
-# ==========线上特征 结束==========
-# ==========线下特征 开始==========
-252586 11
-# ==========用户特征==========
-# ==========商户特征==========
-# ==========优惠券特征==========
-# ==========用户-商户特征==========
-# ==========其他特征==========
-task
-0,task
-1,task
-2,task
-3,task
-4,task
-5,task
-6,task end
-task end
-task end
-task end
-task end
-task end
-task end
-time: 0:06:59
-252586 111
-# ==========线下特征 结束==========
-# ==========线上特征 开始==========
-252586 124
-----------
-# ==========线上特征 结束==========
-drop_columns
-drop_columns
-get_train_data end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-fit_eval_metric end
-train end
-'''
-# ===================================
-
-
-'''
-2019-01-23 03:09:26
-train_xgb
-grid_search_xgb
-train
-get_train_data
-get_train_data end
-/Users/daidai/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:2179: FutureWarning: From version 0.21, test_size will always complement train_size unless both are specified.
-  FutureWarning)
-fit_eval_metric
-fit_eval_metric end
-train end
-train_xgb end
-2019-01-23 03:09:26
-xgb, learning_rate: 0.010, n_estimators: 1290, max_depth: 8, min_child_weight: 4, gamma: 0.1, subsample: 0.8, colsample_bytree: 0.8
-
-  accuracy: 0.936285
-       auc: 0.902952
-coupon auc: 0.788588
-
-time: 0:04:06
-----------------------------------------------------
-'''

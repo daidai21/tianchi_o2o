@@ -1,4 +1,4 @@
-  name	experiment
+name	experiment
 iterCount	3600
 learnErrorLog	learn_error.tsv
 testErrorLog	test_error.tsv

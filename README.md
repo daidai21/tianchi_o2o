@@ -38,6 +38,7 @@
     - [天池 o2o 参考代码（第二届第十一名 | AndyYuen | auc:0.80221）](https://tianchi.aliyun.com/notebook-ai/detail?postId=23504)
     - [TianChi_O2O_forecast（第二届第一名Github | auc:0.81120）](https://github.com/chenkkkk/TianChi_O2O_forecast)
     - [myourdream/tianchi_O2O_predict | 已经第8名了](https://github.com/myourdream/tianchi_O2O_predict)
+    - [myourdream csdn | 已经第8名了](https://blog.csdn.net/myourdream2/article/details/86618120)
 
 ### Copyright
 
